@@ -33,12 +33,37 @@ horario crítico y hasta **35 000** los fines de semana.
 ## Estructura del repositorio
 
 ```
-iac/                  Código Terraform
-  versions.tf         Versiones de Terraform y providers
-  providers.tf        Configuración del provider AWS
-  variables.tf        Variables globales
-  vpc.tf              Red base: VPC, subredes, NAT, rutas
-  ...                 (las siguientes capas se agregan de forma incremental)
+iac/                       Código Terraform
+  versions.tf              Versiones de Terraform y providers
+  providers.tf             Provider AWS y etiquetas por defecto
+  variables.tf             Variables globales
+  locals.tf                Valores locales compartidos
+  outputs.tf               Salidas (endpoints, URLs de ECR, ARNs)
+  vpc.tf                   Red: VPC, subredes 3 AZ, NAT, rutas
+  kms.tf                   Cifrado transversal (KMS)
+  iam.tf                   Grupos y roles (IAM)
+  security_groups.tf       Security groups por capa
+  waf.tf                   WAF v2 (OWASP + SQLi + rate limit)
+  ssm.tf                   Credenciales DB (SecureString)
+  s3_logs.tf               Bucket de logs de acceso
+  rds.tf                   PostgreSQL 16 Multi-AZ + réplica
+  elasticache.tf           Redis (caché de lectura)
+  ecr.tf                   Repositorios de imágenes
+  alb.tf                   ALB + target groups + listeners
+  ecs.tf                   ECS Fargate + autoscaling
+  cloudfront.tf            CDN
+  apigateway.tf            API Gateway HTTP v2 + VPC Link
+  route53.tf               DNS
+  sqs.tf                   Cola + DLQ
+  lambda.tf                Manejo de errores
+  sns.tf                   Alertas
+  cloudwatch.tf            Dashboard y alarmas
+  backup.tf                AWS Backup
+  environments/
+    localhost.tfvars       Ambiente local (puertos 4001-4005)
+    dev.tfvars             Ambiente dev (puertos 5001-5005)
+docs/
+  ARQUITECTURA.md          Flujo y mapeo de los RNF
 ```
 
 ## Cómo usar
