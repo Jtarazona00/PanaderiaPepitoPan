@@ -1,8 +1,6 @@
 # ---------------------------------------------------------------------------
 # Bucket S3 para los logs de acceso del ALB y de CloudFront.
 #
-# TODO: pendiente endurecer en una iteración posterior (bloqueo de acceso
-# público, versionado y cifrado en reposo) antes de pasar a producción.
 # ---------------------------------------------------------------------------
 
 resource "random_id" "logs_suffix" {
@@ -16,4 +14,14 @@ resource "aws_s3_bucket" "logs" {
     Name    = "${var.project}-access-logs"
     Purpose = "alb-cloudfront-access-logs"
   }
+}
+
+# --- Fix CKV2_AWS_6: bloqueo de acceso publico ----------------------------
+resource "aws_s3_bucket_public_access_block" "logs" {
+  bucket = aws_s3_bucket.logs.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }

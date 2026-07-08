@@ -193,17 +193,17 @@ resource "aws_appautoscaling_policy" "backend_cpu" {
 # --- Scheduled Scaling (horarios en zona America/Lima, mar-dom) ------------
 locals {
   backend_schedules = {
-    open       = { schedule = "cron(0 10 ? * TUE-SUN *)",  min = 4,  max = 20 }
+    open       = { schedule = "cron(0 10 ? * TUE-SUN *)", min = 4, max = 20 }
     pre_lunch  = { schedule = "cron(30 12 ? * TUE-SUN *)", min = 10, max = 20 }
-    pre_dinner = { schedule = "cron(0 19 ? * TUE-SUN *)",  min = 10, max = 20 }
-    night_mode = { schedule = "cron(0 23 ? * TUE-SUN *)",  min = 1,  max = 4 }
+    pre_dinner = { schedule = "cron(0 19 ? * TUE-SUN *)", min = 10, max = 20 }
+    night_mode = { schedule = "cron(0 23 ? * TUE-SUN *)", min = 1, max = 4 }
   }
 
   frontend_schedules = {
-    open       = { schedule = "cron(0 10 ? * TUE-SUN *)",  min = 4, max = 12 }
+    open       = { schedule = "cron(0 10 ? * TUE-SUN *)", min = 4, max = 12 }
     pre_lunch  = { schedule = "cron(30 12 ? * TUE-SUN *)", min = 8, max = 12 }
-    pre_dinner = { schedule = "cron(0 19 ? * TUE-SUN *)",  min = 8, max = 12 }
-    night_mode = { schedule = "cron(0 23 ? * TUE-SUN *)",  min = 1, max = 4 }
+    pre_dinner = { schedule = "cron(0 19 ? * TUE-SUN *)", min = 8, max = 12 }
+    night_mode = { schedule = "cron(0 23 ? * TUE-SUN *)", min = 1, max = 4 }
   }
 }
 
