@@ -1,0 +1,30 @@
+name: Checkov IaC
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  checkov:
+    name: Analisis Checkov
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del codigo
+        uses: actions/checkout@v4
+
+      - name: Ejecutar Checkov
+        run: |
+          docker pull bridgecrew/checkov:3
+          docker run --rm -v "${{ github.workspace }}/iac:/tf" --workdir /tf bridgecrew/checkov:3 \
+            --directory /tf -o cli -o junitxml --output-file-path console,results.xml --soft-fail
+
+      - name: Subir reporte de Checkov
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: checkov-results
+          path: iac/results.xml

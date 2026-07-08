@@ -18,6 +18,9 @@ terraform.rc
 results.xml
 *.sarif
 
+# SonarQube / SonarScanner
+.scannerwork/
+
 # Notas internas de trabajo (no versionar)
 PLAN.md
 
