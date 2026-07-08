@@ -1,0 +1,83 @@
+name: SonarQube IaC
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  analisis:
+    name: Analisis SonarQube
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del codigo
+        uses: actions/checkout@v4
+
+      # Elasticsearch (interno de SonarQube) exige subir este parametro del kernel
+      - name: Ajustar vm.max_map_count
+        run: sudo sysctl -w vm.max_map_count=524288
+
+      # SonarQube + PostgreSQL como contenedores Docker dentro del job
+      - name: Levantar SonarQube + PostgreSQL
+        run: docker compose -f sonarqube/docker-compose.yml up -d
+
+      - name: Esperar a que SonarQube este operativo
+        run: |
+          echo "Esperando a SonarQube (puede tardar varios minutos)..."
+          for i in $(seq 1 60); do
+            status=$(curl -s http://localhost:9000/api/system/status | grep -o '"status":"[A-Z]*"' || true)
+            echo "Intento $i -> ${status:-sin respuesta}"
+            if echo "$status" | grep -q '"status":"UP"'; then
+              echo "SonarQube operativo."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "SonarQube no arranco a tiempo. Logs:"
+          docker compose -f sonarqube/docker-compose.yml logs sonarqube
+          exit 1
+
+      - name: Configurar admin y generar token de analisis
+        id: sonar
+        run: |
+          # Cambiar la contrasena por defecto (requerido en el primer arranque)
+          curl -s -u admin:admin -X POST \
+            "http://localhost:9000/api/users/change_password?login=admin&previousPassword=admin&password=Adminpass123" || true
+          # Generar el token de analisis via API
+          TOKEN=$(curl -s -u admin:Adminpass123 -X POST \
+            "http://localhost:9000/api/user_tokens/generate?name=ci-${GITHUB_RUN_ID}" \
+            | grep -o '"token":"[^"]*"' | sed 's/.*://;s/"//g')
+          if [ -z "$TOKEN" ]; then
+            echo "No se pudo generar el token"; exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Crear el proyecto en SonarQube
+        run: |
+          curl -s -u admin:Adminpass123 -X POST \
+            "http://localhost:9000/api/projects/create?project=panaderia-pepito-pan&name=Panaderia+Pepito+Pan" || true
+
+      - name: Analisis con SonarScanner CLI
+        run: |
+          docker run --rm --network host \
+            -e SONAR_HOST_URL="http://localhost:9000" \
+            -e SONAR_TOKEN="${{ steps.sonar.outputs.token }}" \
+            -v "${{ github.workspace }}:/usr/src" \
+            sonarsource/sonar-scanner-cli \
+            -Dsonar.projectKey=panaderia-pepito-pan \
+            -Dsonar.sources=iac \
+            -Dsonar.exclusions=**/*.js \
+            -Dsonar.sourceEncoding=UTF-8 \
+            -Dsonar.qualitygate.wait=true
+
+      - name: Estado del Quality Gate
+        run: |
+          result=$(curl -s -u admin:Adminpass123 \
+            "http://localhost:9000/api/qualitygates/project_status?projectKey=panaderia-pepito-pan")
+          echo "$result"
+          echo "----"
+          echo "Quality Gate: $(echo "$result" | grep -o '"status":"[A-Z]*"' | head -1)"
