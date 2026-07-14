@@ -70,6 +70,10 @@ resource "aws_cloudwatch_log_group" "lambda" {
 }
 
 resource "aws_lambda_function" "error_handler" {
+  # La funcion opera FUERA de la VPC por diseno de arquitectura: solo consume
+  # mensajes de SQS y envia alertas por correo, no accede a RDS ni a Redis.
+  # Mantenerla fuera evita ENIs y arranques en frio innecesarios.
+  #checkov:skip=CKV_AWS_117:Lambda fuera de la VPC por diseno; no accede a recursos privados.
   function_name = "${var.project}-error-handler"
   role          = aws_iam_role.lambda.arn
   runtime       = "nodejs20.x"
