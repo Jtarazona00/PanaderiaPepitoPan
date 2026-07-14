@@ -47,3 +47,11 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "logs" {
     bucket_key_enabled = true
   }
 }
+
+# --- Fix CKV_AWS_18: access logging del bucket ----------------------------
+resource "aws_s3_bucket_logging" "logs" {
+  bucket = aws_s3_bucket.logs.id
+
+  target_bucket = aws_s3_bucket.logs.id
+  target_prefix = "s3-access/"
+}
