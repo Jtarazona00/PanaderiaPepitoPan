@@ -115,3 +115,15 @@ resource "aws_security_group" "redis" {
     Name = "${var.project}-redis-sg"
   }
 }
+
+# --- Fix CKV2_AWS_12: restringir el default security group -----------------
+# El security group por defecto de la VPC se deja SIN reglas de ingress ni
+# egress, de modo que no permita ningun trafico. Ningun recurso lo usa: cada
+# capa tiene su propio security group definido arriba.
+resource "aws_default_security_group" "main" {
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name = "${var.project}-default-sg-restringido"
+  }
+}
