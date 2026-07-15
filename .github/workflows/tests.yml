@@ -1,0 +1,46 @@
+name: Tests de integracion
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  tests:
+    name: Suite de tests (servidor mock)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Levantar el servidor mock
+        run: |
+          node tests/mock-server.js &
+          echo "MOCK_PID=$!" >> "$GITHUB_ENV"
+          echo "Esperando a que el mock responda..."
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:4002/api/health > /dev/null; then
+              echo "Mock server operativo."
+              exit 0
+            fi
+            sleep 0.5
+          done
+          echo "El servidor mock no arranco a tiempo"
+          exit 1
+
+      - name: Ejecutar la suite de tests
+        run: node tests/run-all.js
+        env:
+          BASE_URL: http://localhost:4002
+
+      - name: Detener el servidor mock
+        if: always()
+        run: kill "$MOCK_PID" 2>/dev/null || true
