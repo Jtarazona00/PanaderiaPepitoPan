@@ -9,9 +9,9 @@
 // ---------------------------------------------------------------------------
 
 const http = require('http');
+const { isValidSede, calcTotal } = require('./lib');
 
 const PORT = Number(process.env.PORT) || 4002;
-const MAX_SEDE = 350;
 
 const menu = [
   { id: 1, nombre: 'Lomo Saltado', categoria: 'Fondos', precio: 28, activo: true },
@@ -52,11 +52,6 @@ const pedidos = {};
 function send(res, status, obj) {
   res.writeHead(status, { 'Content-Type': 'application/json', Connection: 'close' });
   res.end(JSON.stringify(obj));
-}
-
-function isValidSede(sedeId) {
-  const n = Number(sedeId);
-  return Number.isInteger(n) && n >= 1 && n <= MAX_SEDE;
 }
 
 function readBody(req) {
@@ -117,7 +112,7 @@ const server = http.createServer(async (req, res) => {
       return send(res, 400, { error: 'items requeridos' });
     }
     const id = ++pedidoSeq;
-    const total = body.items.reduce((s, it) => s + (Number(it.precio) || 0), 0);
+    const total = calcTotal(body.items);
     pedidos[id] = {
       pedido_id: id,
       sede_id: body.sede_id,

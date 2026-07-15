@@ -12,7 +12,20 @@ externas**.
 | 4 | `04-propagation.test.js` | Propagación de disponibilidad < 2000ms |
 | 5 | `05-concurrent.test.js` | 50 requests concurrentes, P95 < 1000ms (RNF1) |
 
-## Cómo correrlos
+## Pruebas unitarias
+
+Aparte de los 5 tests de integración, hay **pruebas unitarias** de las funciones
+puras del proyecto (en `tests/unit/`, con el runner nativo `node:test`, sin
+dependencias):
+
+```bash
+node --test "tests/unit/**/*.test.js"
+```
+
+Cubren `getDisponible` (parseo de disponibilidad), `isValidSede`,
+`normalizeRoute`, `parseLogLevel` y `calcTotal`. No necesitan servidor.
+
+## Cómo correrlos (integración)
 
 Cada test es independiente:
 
