@@ -19,7 +19,7 @@ puras del proyecto (en `tests/unit/`, con el runner nativo `node:test`, sin
 dependencias):
 
 ```bash
-node --test "tests/unit/**/*.test.js"
+node --test tests/unit/lib.test.js tests/unit/helpers.test.js
 ```
 
 Cubren `getDisponible` (parseo de disponibilidad), `isValidSede`,

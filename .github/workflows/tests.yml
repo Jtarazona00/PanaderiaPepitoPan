@@ -22,7 +22,7 @@ jobs:
           node-version: '20'
 
       - name: Pruebas unitarias (node:test)
-        run: node --test "tests/unit/**/*.test.js"
+        run: node --test tests/unit/lib.test.js tests/unit/helpers.test.js
 
       - name: Levantar el servidor mock
         run: |
