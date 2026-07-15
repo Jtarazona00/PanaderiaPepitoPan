@@ -1,0 +1,64 @@
+name: Build & Push a ECR
+
+# Disparo MANUAL (Actions -> Build & Push a ECR -> Run workflow).
+# Cuando tengas los secretos y ECR desplegado, puedes activar el push automático
+# descomentando el bloque "push:" de abajo.
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [ main ]
+
+env:
+  AWS_REGION: us-east-2
+  ECR_BACKEND: pepito-pan/backend
+  ECR_FRONTEND: pepito-pan/frontend
+
+# Requisitos previos para que corra en verde:
+#   1. Repos ECR ya creados (terraform apply de iac/).
+#   2. Secretos del repo (Settings -> Secrets and variables -> Actions):
+#        AWS_ACCESS_KEY_ID       (de un usuario IAM con permisos sobre ECR)
+#        AWS_SECRET_ACCESS_KEY
+#   La cuenta y el registro se detectan solos con amazon-ecr-login.
+
+jobs:
+  build-push:
+    name: Construir y subir imagenes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar credenciales AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login a Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & push del backend
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          TAG: ${{ github.sha }}
+        run: |
+          # Tag = SHA del commit (unico), requerido por los tags inmutables del repo ECR.
+          docker build -t "$REGISTRY/$ECR_BACKEND:$TAG" ./docker/backend
+          docker push "$REGISTRY/$ECR_BACKEND:$TAG"
+
+      - name: Build & push del frontend
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          TAG: ${{ github.sha }}
+        run: |
+          docker build -t "$REGISTRY/$ECR_FRONTEND:$TAG" ./docker/frontend
+          docker push "$REGISTRY/$ECR_FRONTEND:$TAG"
+
+      - name: Resumen
+        run: |
+          echo "Imagenes subidas con el tag ${{ github.sha }}:"
+          echo "  - $ECR_BACKEND"
+          echo "  - $ECR_FRONTEND"
