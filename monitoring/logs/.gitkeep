@@ -1,0 +1,2 @@
+# Carpeta donde los generadores escriben app.log, database.log y login.log.
+# Los .log están en .gitignore; este archivo solo conserva la carpeta en git.

@@ -50,6 +50,29 @@ datos en movimiento.
 > monitorear tu app real, apunta Prometheus a su endpoint `/metrics` en
 > `prometheus.yml`.
 
+## Logs (Grafana + Loki + Promtail)
+
+Además de las métricas (Prometheus), el stack incluye **agregación de logs**:
+
+```
+ generadores (loggen/) ─► app.log · database.log · login.log
+        │  Promtail (tail)
+        ▼
+      Loki  ─►  Grafana (dashboard "Pedidos — Logs")
+```
+
+- **3 generadores** (`loggen/api-gen.js`, `db-gen.js`, `login-gen.js`) escriben
+  logs con niveles `INFO/WARN/ERROR` en `monitoring/logs/` — los puedes abrir en
+  el editor para ver el contenido.
+- **Promtail** los lee y los etiqueta por `service` (app / database / auth).
+- **Loki** los almacena e indexa.
+- En **Grafana** hay un segundo data source (Loki) y el dashboard
+  **"Pedidos — Logs (Loki)"**: errores/warnings, volumen por servicio, logs por
+  nivel y un **stream de logs en vivo** (consultas LogQL).
+
+Los archivos `.log` se generan solos al levantar el stack y están en
+`.gitignore` (no se versionan).
+
 ## Apagar
 
 ```bash

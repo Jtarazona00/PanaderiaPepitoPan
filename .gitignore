@@ -24,6 +24,9 @@ results.xml
 # Notas internas de trabajo (no versionar)
 PLAN.md
 
+# Logs generados por el stack de monitoreo (Loki/Promtail)
+monitoring/logs/*.log
+
 # Entorno de la herramienta
 .claude/
 

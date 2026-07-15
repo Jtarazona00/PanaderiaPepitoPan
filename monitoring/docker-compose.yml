@@ -61,4 +61,38 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
+      - loki
+    restart: unless-stopped
+
+  # --- Agregación de logs:  generadores -> Promtail -> Loki -> Grafana -------
+  loki:
+    image: grafana/loki:2.9.8
+    container_name: pedidos-loki
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    restart: unless-stopped
+
+  loggen:
+    image: node:20-alpine
+    container_name: pedidos-loggen
+    working_dir: /gen
+    volumes:
+      - ./loggen:/gen:ro
+      - ./logs:/logs
+    environment:
+      LOG_DIR: /logs
+    command: node index.js
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:2.9.8
+    container_name: pedidos-promtail
+    command: -config.file=/etc/promtail/config.yaml
+    volumes:
+      - ./promtail-config.yaml:/etc/promtail/config.yaml:ro
+      - ./logs:/logs:ro
+    depends_on:
+      - loki
+      - loggen
     restart: unless-stopped
