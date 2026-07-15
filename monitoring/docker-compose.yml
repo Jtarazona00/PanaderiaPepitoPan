@@ -1,0 +1,64 @@
+# ===========================================================================
+# Stack de observabilidad local:  app (metricas)  ->  Prometheus  ->  Grafana
+#
+#   Uso:
+#     cd monitoring
+#     docker compose up -d
+#     Grafana:     http://localhost:3000   (dashboard "Pedidos — Panel esencial")
+#     Prometheus:  http://localhost:9090
+# ===========================================================================
+
+services:
+  app:
+    image: node:20-alpine
+    container_name: pedidos-app
+    working_dir: /app
+    volumes:
+      - ./app.js:/app/app.js:ro
+    command: node app.js
+    environment:
+      PORT: "4002"
+    ports:
+      - "4002:4002"
+    restart: unless-stopped
+
+  loadgen:
+    image: node:20-alpine
+    container_name: pedidos-loadgen
+    working_dir: /app
+    volumes:
+      - ./loadgen.js:/app/loadgen.js:ro
+    command: node loadgen.js
+    environment:
+      TARGET: "http://app:4002"
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: pedidos-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: pedidos-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
