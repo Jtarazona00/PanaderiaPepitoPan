@@ -11,9 +11,22 @@
 # Ambas funciones operan FUERA de la VPC (ver diagrama): solo hablan con SQS,
 # SNS y SES, nunca con RDS ni Redis.
 #
-# NOTA: los paquetes de despliegue (lambda/trigger.zip y lambda/error_handler.zip)
-# se construyen en el pipeline de CI antes de aplicar Terraform.
+# El código vive en lambda/trigger/ y lambda/error_handler/; Terraform genera
+# los ZIP de despliegue automáticamente con el provider archive.
 # ---------------------------------------------------------------------------
+
+# --- Empaquetado del código de las funciones -------------------------------
+data "archive_file" "trigger" {
+  type        = "zip"
+  source_dir  = "${path.module}/lambda/trigger"
+  output_path = "${path.module}/lambda/trigger.zip"
+}
+
+data "archive_file" "error_handler" {
+  type        = "zip"
+  source_dir  = "${path.module}/lambda/error_handler"
+  output_path = "${path.module}/lambda/error_handler.zip"
+}
 
 data "aws_iam_policy_document" "lambda_assume" {
   statement {
@@ -72,13 +85,14 @@ resource "aws_lambda_function" "trigger" {
   # Opera FUERA de la VPC por diseno: solo recibe la notificacion de la alarma
   # y encola el evento en SQS; no accede a RDS ni a Redis.
   #checkov:skip=CKV_AWS_117:Lambda fuera de la VPC por diseno; no accede a recursos privados.
-  function_name = "${var.project}-trigger"
-  role          = aws_iam_role.lambda_trigger.arn
-  runtime       = "nodejs20.x"
-  handler       = "index.handler"
-  filename      = "${path.module}/lambda/trigger.zip"
-  timeout       = 30
-  memory_size   = 256
+  function_name    = "${var.project}-trigger"
+  role             = aws_iam_role.lambda_trigger.arn
+  runtime          = "nodejs20.x"
+  handler          = "index.handler"
+  filename         = data.archive_file.trigger.output_path
+  source_code_hash = data.archive_file.trigger.output_base64sha256
+  timeout          = 30
+  memory_size      = 256
 
   kms_key_arn = aws_kms_key.main.arn
 
@@ -180,13 +194,14 @@ resource "aws_lambda_function" "error_handler" {
   # mensajes de SQS y envia alertas por correo, no accede a RDS ni a Redis.
   # Mantenerla fuera evita ENIs y arranques en frio innecesarios.
   #checkov:skip=CKV_AWS_117:Lambda fuera de la VPC por diseno; no accede a recursos privados.
-  function_name = "${var.project}-error-handler"
-  role          = aws_iam_role.lambda.arn
-  runtime       = "nodejs20.x"
-  handler       = "index.handler"
-  filename      = "${path.module}/lambda/error_handler.zip"
-  timeout       = 30
-  memory_size   = 256
+  function_name    = "${var.project}-error-handler"
+  role             = aws_iam_role.lambda.arn
+  runtime          = "nodejs20.x"
+  handler          = "index.handler"
+  filename         = data.archive_file.error_handler.output_path
+  source_code_hash = data.archive_file.error_handler.output_base64sha256
+  timeout          = 30
+  memory_size      = 256
 
   kms_key_arn = aws_kms_key.main.arn
 

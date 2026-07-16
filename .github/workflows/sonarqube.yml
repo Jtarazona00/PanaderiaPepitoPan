@@ -70,7 +70,6 @@ jobs:
             sonarsource/sonar-scanner-cli \
             -Dsonar.projectKey=panaderia-pepito-pan \
             -Dsonar.sources=iac \
-            -Dsonar.exclusions=**/*.js \
             -Dsonar.sourceEncoding=UTF-8 \
             -Dsonar.qualitygate.wait=true
 

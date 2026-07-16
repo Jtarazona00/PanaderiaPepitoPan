@@ -27,6 +27,9 @@ PLAN.md
 # Logs generados por el stack de monitoreo (Loki/Promtail)
 monitoring/logs/*.log
 
+# ZIP de las Lambdas (los genera Terraform con archive_file)
+iac/lambda/*.zip
+
 # Entorno de la herramienta
 .claude/
 
